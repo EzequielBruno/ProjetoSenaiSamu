@@ -1,101 +1,173 @@
-import Image from "next/image";
+// Next.js prototype for product location system with Tailwind CSS styling
+'use client'
+import { useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
 
-export default function Home() {
+const Home = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [streets, setStreets] = useState(() => JSON.parse(Cookies.get('streets') || '[]'));
+  const [selectedStreet, setSelectedStreet] = useState('');
+  const [selectedLot, setSelectedLot] = useState('');
+  const [productName, setProductName] = useState('');
+  const [productLocation, setProductLocation] = useState('');
+  const [userView, setUserView] = useState({});
+
+  useEffect(() => {
+    Cookies.set('streets', JSON.stringify(streets), { expires: 7 });
+  }, [streets]);
+
+  const handleAddStreet = () => {
+    const newStreet = prompt('Enter the name of the new street:');
+    if (newStreet) setStreets([...streets, { name: newStreet, lots: [] }]);
+  };
+
+  const handleAddLot = (streetName) => {
+    const updatedStreets = streets.map((street) => {
+      if (street.name === streetName) {
+        const newLot = prompt(`Enter the name of the new lot for ${streetName}:`);
+        if (newLot) street.lots.push({ name: newLot, product: '' });
+      }
+      return street;
+    });
+    setStreets(updatedStreets);
+  };
+
+  const handleAssignProduct = () => {
+    if (!selectedStreet || !selectedLot || !productName) {
+      alert('Please select a street, a lot, and enter a product name.');
+      return;
+    }
+    const updatedStreets = streets.map((street) => {
+      if (street.name === selectedStreet) {
+        street.lots = street.lots.map((lot) => {
+          if (lot.name === selectedLot) {
+            lot.product = productName;
+          }
+          return lot;
+        });
+      }
+      return street;
+    });
+    setStreets(updatedStreets);
+    setProductName('');
+  };
+
+  const handleUserSearch = (product) => {
+    for (const street of streets) {
+      const foundLot = street.lots.find((lot) => lot.product === product);
+      if (foundLot) {
+        setUserView({ street: street.name, lot: foundLot.name });
+        return;
+      }
+    }
+    setUserView({ error: 'Produto não encontrado' });
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url("/Images/Wallpepar projetoSenai.JPG")' }}>
+      <header className="bg-blue-800 text-white p-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Log Organization</h1>
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          onClick={() => setIsAdmin(!isAdmin)}
+        >
+          Mudar para modo {isAdmin ? 'User' : 'Admin'}
+        </button>
+      </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+      <main className="p-6">
+        {isAdmin ? (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Painel Administrador</h2>
+            <button
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+              onClick={handleAddStreet}
+            >
+              Adicionar Rua
+            </button>
+            <div className="space-y-4">
+              {streets.map((street) => (
+                <div key={street.name} className="bg-white p-4 rounded shadow-md">
+                  <h3 className="text-lg font-semibold">{street.name}</h3>
+                  <button
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 mt-2 rounded"
+                    onClick={() => handleAddLot(street.name)}
+                  >
+                    Adicionar Lote
+                  </button>
+                  <div className="mt-2 space-y-1">
+                    {street.lots.map((lot) => (
+                      <div key={lot.name} className="text-gray-700">
+                        {lot.name} - <span className="font-semibold">{lot.product || 'Empty'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <h2 className="text-xl font-bold mt-6">Cadastrar Produto</h2>
+            <div className="space-y-2">
+              <select
+                className="block w-full p-2 border rounded"
+                onChange={(e) => setSelectedStreet(e.target.value)}
+              >
+                <option value="">Selecionar Rua</option>
+                {streets.map((street) => (
+                  <option key={street.name} value={street.name}>{street.name}</option>
+                ))}
+              </select>
+              <select
+                className="block w-full p-2 border rounded"
+                onChange={(e) => setSelectedLot(e.target.value)}
+                disabled={!selectedStreet}
+              >
+                <option value="">Selecionar Lote</option>
+                {streets.find((street) => street.name === selectedStreet)?.lots.map((lot) => (
+                  <option key={lot.name} value={lot.name}>{lot.name}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Product Name"
+                className="block w-full p-2 border rounded"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+              />
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                onClick={handleAssignProduct}
+              >
+                Cadastrar Produto
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Painel de Usuário</h2>
+            <input
+              type="text"
+              placeholder="Procurar Produto"
+              className="block w-full p-2 border rounded"
+              onChange={(e) => setProductLocation(e.target.value)}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              onClick={() => handleUserSearch(productLocation)}
+            >
+              Procurar
+            </button>
+            {userView.error ? (
+              <p className="text-red-600 font-semibold">{userView.error}</p>
+            ) : userView.street ? (
+              <p className="text-green-600 font-semibold">
+                Encontrado na rua: {userView.street}, Lote: {userView.lot}
+              </p>
+            ) : null}
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
-}
+};
+
+export default Home;
