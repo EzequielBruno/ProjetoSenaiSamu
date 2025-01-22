@@ -64,7 +64,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url("/Images/Wallpepar projetoSenai.JPG")' }}>
+    <div className="min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url("/Images/Wallpepar projetoSenai.jpg")' }}>
       <header className="bg-blue-800 text-white p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Log Organization</h1>
         <button
@@ -98,7 +98,7 @@ const Home = () => {
                   <div className="mt-2 space-y-1">
                     {street.lots.map((lot) => (
                       <div key={lot.name} className="text-gray-700">
-                        {lot.name} - <span className="font-semibold">{lot.product || 'Empty'}</span>
+                        {lot.name} - <span className="font-semibold">{lot.product || 'Vazio'}</span>
                       </div>
                     ))}
                   </div>
